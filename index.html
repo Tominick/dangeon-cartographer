@@ -921,7 +921,7 @@
         }
 
         function restoreState(){
-             const previouslySaved = localStorage.getItem('dndGameState')
+            const previouslySaved = localStorage.getItem('dndGameState')
             if (previouslySaved) {
                 currentStage = 2;
                 document.getElementById('stage1').style.display = 'none';
@@ -1138,8 +1138,26 @@
             document.getElementById('stage2').style.display = 'block';
             document.getElementById('stageIndicator').textContent = 'Stage: Player Setup';
             RecalculateTileAndGrid();
+            RestorePlayerPositions();
             //loadGameState();
             showNotification('Entering Player Setup Stage ⚔️');
+        }
+
+        function RestorePlayerPositions() {
+            players.forEach(player => {
+                if (player.position) {
+                    const tile = document.querySelector(`.map-tile[data-row="${player.position.row}"][data-col="${player.position.col}"]`);
+                    if (tile) {
+                        if (tile.querySelectorAll('.player-token').length === 0) {
+                            selectedPlayer = player;
+                            selectedPlayerForMovement = player;
+                            var row = player.position.row;
+                            var col = player.position.col;
+                            movePlayerToTile(selectedPlayerForMovement, row, col);
+                        }                            
+                    }
+                }
+            });
         }
 
         function goToStage1() {

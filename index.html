@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Cartographer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Almendra:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --parchment: #f4e8d0;
+            --dark-brown: #3d2817;
+            --gold: #d4af37;
+            --deep-red: #8b0000;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --stone: #6b7280;
+        }
+        
+        html {
+            height: 100%;
+        }
+     
+        body {
+            font-family: 'Almendra', serif;
+            background: linear-gradient(135deg, #2c1810 0%, #1a0f08 100%);
+            color: var(--parchment);
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+            height: 100%;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5em;
+            color: var(--gold);
+            text-shadow: 3px 3px 6px var(--shadow);
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: var(--parchment);
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .stage-indicator {
+            display: inline-block;
+            padding: 10px 30px;
+            background: var(--deep-red);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            margin-top: 15px;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            background: rgba(61, 40, 23, 0.9);
+            border: 3px solid var(--gold);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 5px;
+            box-shadow: 0 8px 20px var(--shadow);
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 8px;
+        }
+
+        .tile-palette, .player-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .tile-option, .player-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            background: rgba(244, 232, 208, 0.1);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tile-option:hover, .player-option:hover {
+            background: rgba(244, 232, 208, 0.2);
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+
+        .tile-option.selected, .player-option.selected {
+            background: rgba(212, 175, 55, 0.3);
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
+
+        .tile-preview, .player-preview {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 8px;
+            border: 2px solid var(--stone);
+            border-radius: 4px;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .tile-preview.grass { 
+            background: linear-gradient(135deg, #4a7c4e 25%, #5a8c5e 25%, #5a8c5e 50%, #4a7c4e 50%, #4a7c4e 75%, #5a8c5e 75%, #5a8c5e) !important;
+            background-size: 8px 8px !important;
+        }
+        
+        .tile-preview.wall { 
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bevel" x1="0%" y1="0" x2="100%" y2="100%"><stop offset="0%" stop-color="%236b5a4a"/><stop offset="50%" stop-color="%235a4a3a"/><stop offset="100%" stop-color="%234a3a2a"/></linearGradient></defs><rect fill="%235a4a3a" width="100" height="100"/><g stroke="%233a2a1a" stroke-width="3"><rect x="2" y="2" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="35.33" y="2" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="68.66" y="2" width="29.34" height="29.33" fill="url(%23bevel)"/><rect x="2" y="35.33" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="35.33" y="35.33" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="68.66" y="35.33" width="29.34" height="29.33" fill="url(%23bevel)"/><rect x="2" y="68.66" width="29.33" height="29.34" fill="url(%23bevel)"/><rect x="35.33" y="68.66" width="29.33" height="29.34" fill="url(%23bevel)"/><rect x="68.66" y="68.66" width="29.34" height="29.34" fill="url(%23bevel)"/></g></svg>') !important;
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+
+        .tile-preview.path {
+            background: 
+                linear-gradient(90deg, rgba(139,119,101,0.3) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(139,119,101,0.3) 1px, transparent 1px),
+                #d2b48c !important;
+            background-size: 33.3333% 33.3333% !important;
+        }
+        .tile-preview.water { 
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(100,149,237,0.4) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(135,206,250,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #1e90ff 25%, #4169e1 25%, #4169e1 50%, #1e90ff 50%, #1e90ff 75%, #4169e1 75%, #4169e1) !important;
+            background-size: 100% 100%, 100% 100%, 50px 50px !important;
+        }
+        
+        .tile-preview.door { 
+            background: linear-gradient(180deg, #a0826d 0%, #8b6f47 50%, #6b5637 100%) !important;
+            position: relative !important;
+        }
+        .tile-preview.door::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid #4a3828;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .tile-preview.door::after {
+            content: '◉';
+            position: absolute;
+            top: 50%;
+            right: 0%;
+            transform: translateY(-50%) scale(25%, 25%);
+            color: #d4af37;
+            font-size: 1.2em;
+        }
+
+        .tile-preview.tree {
+            background: linear-gradient(135deg, #4a7c4e 25%, #5a8c5e 25%, #5a8c5e 50%, #4a7c4e 50%, #4a7c4e 75%, #5a8c5e 75%, #5a8c5e) !important;
+            background-size: 8px 8px !important;
+        }
+        
+        .tile-preview.tree::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 95%;
+            height: 95%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%231a4d1a" opacity="0.95"/><circle cx="50" cy="50" r="40" fill="%23255d25" opacity="0.9"/><circle cx="50" cy="50" r="32" fill="%23306d30" opacity="0.85"/><circle cx="30" cy="35" r="18" fill="%231a4d1a" opacity="0.8"/><circle cx="70" cy="38" r="20" fill="%23205520" opacity="0.8"/><circle cx="50" cy="25" r="16" fill="%23255d25" opacity="0.85"/><circle cx="35" cy="65" r="17" fill="%231f521f" opacity="0.8"/><circle cx="65" cy="62" r="19" fill="%23256025" opacity="0.8"/><circle cx="50" cy="75" r="15" fill="%231a4d1a" opacity="0.85"/><circle cx="25" cy="50" r="14" fill="%23205520" opacity="0.75"/><circle cx="75" cy="55" r="16" fill="%23306d30" opacity="0.75"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .tile-preview.dark { 
+            background: linear-gradient(135deg, #1a1a1a 25%, #2d2d2d 25%, #2d2d2d 50%, #1a1a1a 50%, #1a1a1a 75%, #2d2d2d 75%, #2d2d2d) !important;
+            background-size: 8px 8px !important;
+            position: relative !important;
+        }
+
+        .tile-label, .player-label {
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .map-container {
+            flex-grow: 1;
+            min-height: 500px;
+            min-width: 900px;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        .map-grid {
+            display: grid;
+            gap: 1px;
+            background: transparent;
+            justify-content: center;
+        }
+
+        .map-tile {
+            width: 80px;
+            height: 80px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            flex-shrink: 0;
+            touch-action: none;  /*prevent touch scrolling while drawing */
+        }
+
+        .map-tile:hover {
+            box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.5);
+            border-color: var(--gold);
+        }
+
+        .map-tile.grass { 
+            background: linear-gradient(135deg, #4a7c4e 25%, #5a8c5e 25%, #5a8c5e 50%, #4a7c4e 50%, #4a7c4e 75%, #5a8c5e 75%, #5a8c5e);
+            background-size: 8px 8px;
+        }
+        .map-tile.wall { 
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="bevel" x1="0%" y1="0" x2="100%" y2="100%"><stop offset="0%" stop-color="%236b5a4a"/><stop offset="50%" stop-color="%235a4a3a"/><stop offset="100%" stop-color="%234a3a2a"/></linearGradient></defs><rect fill="%235a4a3a" width="100" height="100"/><g stroke="%233a2a1a" stroke-width="3"><rect x="2" y="2" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="35.33" y="2" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="68.66" y="2" width="29.34" height="29.33" fill="url(%23bevel)"/><rect x="2" y="35.33" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="35.33" y="35.33" width="29.33" height="29.33" fill="url(%23bevel)"/><rect x="68.66" y="35.33" width="29.34" height="29.33" fill="url(%23bevel)"/><rect x="2" y="68.66" width="29.33" height="29.34" fill="url(%23bevel)"/><rect x="35.33" y="68.66" width="29.33" height="29.34" fill="url(%23bevel)"/><rect x="68.66" y="68.66" width="29.34" height="29.34" fill="url(%23bevel)"/></g></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+        }
+        .map-tile.door { 
+            background: linear-gradient(180deg, #a0826d 0%, #8b6f47 50%, #6b5637 100%);
+            position: relative;
+        }
+        .map-tile.door::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid #4a3828;
+            border-radius: 4px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+        .map-tile.door::after {
+            content: '◉';
+            position: absolute;
+            top: 50%;
+            right: 8%;
+            transform: translateY(-50%) scale(25%, 25%);
+            color: #d4af37;
+            font-size: 1.2em;
+        }
+        .map-tile.tree { 
+            background: linear-gradient(135deg, #4a7c4e 25%, #5a8c5e 25%, #5a8c5e 50%, #4a7c4e 50%, #4a7c4e 75%, #5a8c5e 75%, #5a8c5e);
+            background-size: 8px 8px;
+            position: relative;
+        }
+        .map-tile.tree::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 95%;
+            height: 95%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="%231a4d1a" opacity="0.95"/><circle cx="50" cy="50" r="40" fill="%23255d25" opacity="0.9"/><circle cx="50" cy="50" r="32" fill="%23306d30" opacity="0.85"/><circle cx="30" cy="35" r="18" fill="%231a4d1a" opacity="0.8"/><circle cx="70" cy="38" r="20" fill="%23205520" opacity="0.8"/><circle cx="50" cy="25" r="16" fill="%23255d25" opacity="0.85"/><circle cx="35" cy="65" r="17" fill="%231f521f" opacity="0.8"/><circle cx="65" cy="62" r="19" fill="%23256025" opacity="0.8"/><circle cx="50" cy="75" r="15" fill="%231a4d1a" opacity="0.85"/><circle cx="25" cy="50" r="14" fill="%23205520" opacity="0.75"/><circle cx="75" cy="55" r="16" fill="%23306d30" opacity="0.75"/></svg>');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }        
+        .map-tile.path { 
+            background: 
+                linear-gradient(90deg, rgba(139,119,101,0.3) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(139,119,101,0.3) 1px, transparent 1px),
+                #d2b48c;
+            background-size: 33.3333% 33.3333%;
+        }
+        .map-tile.water { 
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(100,149,237,0.4) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(135,206,250,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #1e90ff 25%, #4169e1 25%, #4169e1 50%, #1e90ff 50%, #1e90ff 75%, #4169e1 75%, #4169e1);
+            background-size: 100% 100%, 100% 100%, 20px 20px;
+            animation: waterFlow 4s ease-in-out infinite;
+        }
+        
+        @keyframes waterFlow {
+            0%, 100% { background-position: 0% 0%, 0% 0%, 0 0; }
+            50% { background-position: 10% 10%, -10% -10%, -20px -20px; }
+        }
+        
+        .map-tile.dark { 
+            background: linear-gradient(135deg, #1a1a1a 25%, #2d2d2d 25%, #2d2d2d 50%, #1a1a1a 50%, #1a1a1a 75%, #2d2d2d 75%, #2d2d2d);
+            background-size: 8px 8px;
+            position: relative;
+        }
+
+        .player-token {
+            position: absolute;
+            transform: scale(50%, 50%);
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: move;
+            z-index: 10;
+            box-shadow: 0 4px 12px var(--shadow);
+            transition: transform 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .player-token:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.7);
+        }
+
+        .player-token.selected-token {
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }
+            50% { box-shadow: 0 0 30px rgba(255, 0, 0, 1); }
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            font-family: 'Cinzel', serif;
+            padding: 12px 30px;
+            background: var(--deep-red);
+            color: var(--gold);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: var(--gold);
+            color: var(--deep-red);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .player-manager {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"], input[type="number"] {
+            font-family: 'Almendra', serif;
+            padding: 10px 15px;
+            background: rgba(244, 232, 208, 0.1);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            color: var(--parchment);
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus {
+            outline: none;
+            background: rgba(244, 232, 208, 0.2);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+        }
+
+        .player-list {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin-top: 15px;
+             overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 6px; /* space for scrollbar on some platforms */
+            flex-wrap: nowrap;
+        }
+
+        .player-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: rgba(244, 232, 208, 0.1);
+            border: 2px solid var(--stone);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player-item:hover {
+            background: rgba(244, 232, 208, 0.2);
+            border-color: var(--gold);
+        }
+
+        .player-item.selected-player {
+            background: rgba(212, 175, 55, 0.3);
+            border-color: var(--gold);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+        }
+
+        .player-item-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: var(--deep-red);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            color: var(--parchment);
+            font-family: 'Cinzel', serif;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.5s ease;
+            z-index: 1000;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        select#playerType {
+            font-family: 'Almendra', serif;
+            padding: 10px 15px;
+            background: rgba(244, 232, 208, 0.1);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            color: var(--parchment);
+            font-size: 1em;
+        }
+
+        select#playerType:hover {
+            background: var(--gold);
+            color: var(--deep-red);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        select#playerType option {
+            background: var(--dark-brown);
+            color: var(--parchment);
+            padding: 10px;
+        }
+
+        .import-map-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .import-map-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+            background: var(--dark-brown);
+            border: 2px solid var(--gold);
+            border-radius: 5px;
+            box-shadow: 0 8px 20px var(--shadow);
+            z-index: 1000;
+            min-width: 200px;
+        }
+
+        .import-map-menu.show {
+            display: block;
+        }
+
+        .import-map-menu-item {
+            font-family: 'Almendra', serif;
+            padding: 12px 20px;
+            color: var(--parchment);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .import-map-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .import-map-menu-item:hover {
+            background: var(--gold);
+            color: var(--deep-red);
+        }
+
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ Dungeon Cartographer ⚔️ <span id="stageIndicator">Stage: Map Design</span></h1>
+        </header>
+
+        <!-- Stage 1: Map Design -->
+        <div id="stage1">
+            <div class="controls">
+                <div class="control-section">
+                    <h3>🗺️ Tile Selection</h3>
+                    <div class="tile-palette" id="tilePalette"></div>
+                </div>
+                <div class="buttons">
+                    <button onclick="generateMap()">Generate Map</button>
+                    <button onclick="saveMap()">Save Map</button>
+                    <button onclick="loadMap()">Load Map</button>
+                    <button onclick="clearMap()">Clear Map</button>
+                    <button onclick="exportMap()">Export Map</button>
+                    <div class="import-map-container">
+                        <button onclick="toggleImportMenu(event)">Import Map ▼</button>
+                        <div id="importMapMenu" class="import-map-menu">
+                            <div class="import-map-menu-item" onclick="selectImportOption('file')">Import from File...</div>                            
+                            <div class="import-map-menu-item" onclick="selectImportOption('village-room.json')">Village</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('better-village.json')">Village+</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('two-ways-forest.json')">Forest</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('forest-plus.json')">Forest+</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('labirinth.json')">Labyrinth</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('castle.json')">Castle</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('boat.json')">Boat</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('boat-1.json')">Boat-1</div>
+                            <div class="import-map-menu-item" onclick="selectImportOption('island.json')">Island</div>
+                        </div>
+                    </div>
+                    <input type="file" id="importMapFile" accept=".json" style="display: none;" onchange="importMap(event)">                    
+                    <button onclick="goToStage2()">To Player Setup</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage 2: Player Placement -->
+        <div id="stage2" style="display: none;">
+            <div class="controls">
+                <div class="control-section">
+                    <h3>⚔️ Player Management</h3>
+                    <div class="player-manager">
+                        <select id="playerType">
+                            <!--  Populate in init() -->
+                        </select>
+                        <input type="text" id="playerName" placeholder="Name" />
+                        <button onclick="addPlayer(event)">Add</button>
+                        <button onclick="removeSelectedPlayer()">Remove</button>
+                        <button onclick="clearPositionSelectedPlayer()">Clear Position</button>
+                        <div class="import-map-container">
+                            <button onclick="toggleStateMenu(event)">State ▼</button>
+                            <div id="stateMenu" class="import-map-menu">
+                                <div class="import-map-menu-item" onclick="clearStateMenu(); saveGameState()">Save State</div>
+                                <div class="import-map-menu-item" onclick="clearStateMenu(); loadGameState()">Load State</div>                            
+                                <div class="import-map-menu-item" onclick="clearStateMenu(); clearGameState()">Clear State</div>                            
+                            </div>
+                        </div>
+                        <button onclick="goToStage1()">To Map Design</button>
+                        </div>
+                        <div class="player-list" id="playerList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div class="map-grid" id="mapGrid"></div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Configuration
+        const GRID_COLS = 48;
+        const GRID_ROWS = 27;
+        let TILE_SIZE = 20; // Will be calculated dynamically
+
+        // Tile types
+        const TILE_TYPES = [
+            { id: 'grass', name: 'Grass', icon: '', color: '#4a7c4e' },
+            { id: 'tree', name: 'Tree', icon: '', color: '#228B22' },
+            { id: 'path', name: 'Path', icon: '', color: '#d2b48c' },
+            { id: 'wall', name: 'Wall', icon: '', color: '#6b4423' },
+            { id: 'door', name: 'Door', icon: '', color: '#8b6f47' },                        
+            { id: 'water', name: 'Water', icon: '', color: '#1e90ff' },
+            { id: 'dark', name: 'Dark', icon: '', color: '#000000' },            
+        ];
+
+        // Player types
+        const PLAYER_TYPES = [
+            { id: 0, name: 'Warrior', icon: '🛡️', color: '#c0392b' },
+            { id: 1, name: 'Wizard', icon: '🧙', color: '#8e44ad' },
+            { id: 2, name: 'Ranger', icon: '🏹', color: '#27ae60' },
+            { id: 3, name: 'Rogue', icon: '🗡️', color: '#34495e' },
+            { id: 4, name: 'Cleric', icon: '⚕️', color: '#f39c12' },
+            { id: 5, name: 'Bard', icon: '🎭', color: '#e74c3c' },
+            { id: 6, name: 'Druid', icon: '🦁', color: '#16a085' },
+            { id: 7, name: 'Paladin', icon: '⚔️', color: '#d4af37' },
+            { id: 8, name: 'Monk', icon: '👴', color: '#95a5a6' },
+            { id: 9, name: 'Barbarian', icon: '👹', color: '#c0392b' },
+            { id: 10, name: 'Fox', icon: '🦊', color: '#f1c40f' },
+            { id: 11, name: 'Frog', icon: '🐸', color: '#27ae60' },
+            { id: 12, name: 'Wolf', icon: '🐺', color: '#8b4513' },
+            { id: 13, name: 'Rabbit', icon: '🐰', color: '#8b4513' },
+            { id: 14, name: 'Prince', icon: '🤴', color: '#8b4513' },
+            { id: 15, name: 'Girl', icon: '👱‍♀️', color: '#8b4513' },
+            { id: 16, name: 'Person', icon: '🧑', color: '#8b4513' },
+            { id: 17, name: 'Dragon', icon: '🐉', color: '#e74c3c' },
+            { id: 18, name: 'Unicorn', icon: '🦄', color: '#9b59b6' },
+            { id: 19, name: 'Elf', icon: '🧝', color: '#27ae60' },
+            { id: 20, name: 'Skull', icon: '💀', color: '#7f8c8d' },
+            { id: 21, name: 'Goblin', icon: '👺', color: '#27ae60' },
+            //Items
+            { id: 22, name: 'Key', icon: '🔑', color: '#f1c40f' },
+            { id: 23, name: 'Fire', icon: '🔥', color: '#e74c3c' },
+            { id: 24, name: 'Food', icon: '🍲', color: '#f1c40f' },
+            { id: 25, name: 'Bed', icon: '🛏️', color: '#95a5a6' },
+            { id: 26, name: 'Book', icon: '📘', color: '#95a5a6' },
+            { id: 27, name: 'Trap', icon: '⚠️', color: '#8b4513' },
+            { id: 28, name: 'Treasure', icon: '💰', color: '#d4af37' },
+            { id: 29, name: 'Potion', icon: '🧪', color: '#9b59b6' },
+            { id: 30, name: 'Amulet', icon: '🥇', color: '#f1c40f' },            
+        ];
+
+        // State
+        let currentStage = 1;
+        let selectedTileType = TILE_TYPES[0];
+        let mapData = [];
+        let players = [];
+        let selectedPlayer = null;
+        let selectedPlayerForMovement = null;
+        let lastCol = -1;
+        let lastRow = -1;
+
+        // Initialize
+        function init() {
+            createTilePalette();
+            PopulatePlayerTypeDropdown();            
+            window.addEventListener('load', () => {
+                calculateTileSize();
+                createMapGrid();
+                restoreState();
+            });
+            window.addEventListener('resize', () => {
+                RecalculateTileAndGrid();
+            });
+        }
+
+        function PopulatePlayerTypeDropdown() {
+            const playerTypeSelect = document.getElementById('playerType');
+            PLAYER_TYPES.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type.id;
+                option.textContent = type.icon + ' ' + type.name;
+                playerTypeSelect.appendChild(option);
+            });
+        }
+        function RecalculateTileAndGrid() {
+            calculateTileSize();
+            updateGridSize();
+        }
+
+        // Calculate optimal tile size based on available space
+        function calculateTileSize() {
+            const container = document.querySelector('.map-container');
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            console.log('Container Size:', containerWidth, containerHeight);
+
+            const tileSizeByWidth = Math.floor(containerWidth / GRID_COLS);
+            const tileSizeByHeight = Math.floor(containerHeight / GRID_ROWS);
+            console.log('Predicted Tile Size:', tileSizeByWidth, tileSizeByHeight);
+            
+            // Use the smaller of the two to ensure tiles remain square
+            TILE_SIZE = Math.min(tileSizeByWidth, tileSizeByHeight);
+            TILE_SIZE = Math.max(TILE_SIZE-1, 20); // Min 20px
+            console.log('TILE_SIZE:', TILE_SIZE);
+        }
+
+        // Update grid size
+        function updateGridSize() {
+            const grid = document.getElementById('mapGrid');
+            grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, ${TILE_SIZE}px)`;
+            grid.style.gridTemplateRows = `repeat(${GRID_ROWS}, ${TILE_SIZE}px)`;
+            
+            const tiles = document.querySelectorAll('.map-tile');
+            tiles.forEach(tile => {
+                tile.style.width = `${TILE_SIZE}px`;
+                tile.style.height = `${TILE_SIZE}px`;
+                tile.style.minWidth = `${TILE_SIZE}px`;
+                tile.style.minHeight = `${TILE_SIZE}px`;
+                tile.style.maxWidth = `${TILE_SIZE}px`;
+                tile.style.maxHeight = `${TILE_SIZE}px`;
+            });
+
+            // Update player tokens
+            /* const tokens = document.querySelectorAll('.player-token');
+            tokens.forEach(token => {
+                token.style.width = `${TILE_SIZE - 10}px`;
+                token.style.height = `${TILE_SIZE - 10}px`;
+            });
+             console.log('updateGridSize TILE_SIZE:', TILE_SIZE); */
+        }
+
+        // Create tile palette
+        function createTilePalette() {
+            const palette = document.getElementById('tilePalette');
+            TILE_TYPES.forEach((type, index) => {
+                const option = document.createElement('div');
+                option.className = 'tile-option' + (index === 0 ? ' selected' : '');
+                option.onclick = () => selectTileType(type, option);
+                option.innerHTML = `
+                    <div class="tile-preview ${type.id}" style="background: ${type.color};">${type.icon}</div>
+                    <div class="tile-label">${type.name}</div>
+                `;
+                palette.appendChild(option);
+            });
+        }
+
+        // Select tile type
+        function selectTileType(type, element) {
+            selectedTileType = type;
+            document.querySelectorAll('.tile-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        // Create map grid
+        function createMapGrid() {
+            const grid = document.getElementById('mapGrid');
+            grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, ${TILE_SIZE}px)`;
+            grid.style.gridTemplateRows = `repeat(${GRID_ROWS}, ${TILE_SIZE}px)`;
+            
+            for (let row = 0; row < GRID_ROWS; row++) {
+                mapData[row] = [];
+                for (let col = 0; col < GRID_COLS; col++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'map-tile grass';
+                    tile.dataset.row = row;
+                    tile.dataset.col = col;
+                    tile.style.width = `${TILE_SIZE}px`;
+                    tile.style.height = `${TILE_SIZE}px`;
+                    // tile.onclick = (ev) => handleTileClick(row, col, tile, ev.shiftKey);
+                    tile.onpointerdown = (ev) => {
+                        console.log(ev);
+                        ev.preventDefault();
+                        if (ev.buttons === 1) {
+                            // try { tile.setPointerCapture(ev.pointerId); } catch (e) {}
+                            handleTileClick(row, col, tile, ev.shiftKey);
+                        }
+                    };
+                    tile.onpointerup = (ev) => {
+                        // try { tile.releasePointerCapture(ev.pointerId); } catch (e) {}
+                        console.log(ev);
+                        if (ev.pointerType === 'pen')
+                        {
+                            ev.stopPropagation();
+                            var overTile = document.elementFromPoint(ev.clientX, ev.clientY);
+                            if (overTile && overTile.classList.contains('map-tile')) {
+                                handleTileClick(overTile.dataset.row, overTile.dataset.col, overTile, true);
+                            }
+                        } else {
+                            handleTileClick(row, col, tile, true);
+                        }
+                    };
+                    tile.onpointercancel = (ev) => {
+                        // try { tile.releasePointerCapture(ev.pointerId); } catch (e) {}
+                    };
+                    /* tile.onmousedown = (ev) => {
+                        log('mousedown' + ev.buttons);
+                        if (ev.buttons === 1) {
+                            handleTileClick(row, col, tile, ev.shiftKey);
+                        }
+                    };
+                    tile.onmouseup = (ev) => {
+                        log('mouseup');
+                        handleTileClick(row, col, tile, true);
+                    }; */
+                    grid.appendChild(tile);
+                    mapData[row][col] = { type: 'grass', icon: '' };
+                }
+            }
+        }
+
+        function log(msg){
+            document.getElementById('stageIndicator').textContent = msg;
+        }
+
+        // Handle tile click
+        function handleTileClick(row, col, tileElement, rectangularFill) {
+            if (currentStage === 1) {                
+                
+                if (rectangularFill) {                    
+                    // fill area
+                    for (let r = Math.min(lastRow, row); r <= Math.max(lastRow, row); r++) {
+                        for (let c = Math.min(lastCol, col); c <= Math.max(lastCol, col); c++) {
+                            mapData[r][c] = { type: selectedTileType.id, icon: selectedTileType.icon };
+                            const tileToUpdate = document.querySelector(`.map-tile[data-row='${r}'][data-col='${c}']`);
+                            tileToUpdate.className = `map-tile ${selectedTileType.id}`;
+                            tileToUpdate.textContent = selectedTileType.icon;
+                        }
+                    }
+                } else {
+                // one tile at a time
+                mapData[row][col] = { 
+                    type: selectedTileType.id, 
+                    icon: selectedTileType.icon 
+                };
+                tileElement.className = `map-tile ${selectedTileType.id}`;
+                tileElement.textContent = selectedTileType.icon;
+                lastCol = col;
+                lastRow = row; 
+                }                
+                
+            } else if (currentStage === 2 && !rectangularFill) {
+                if (selectedPlayerForMovement)
+                {
+                    // Player movement mode                
+                    if (TileContainsAnotherPlayer(selectedPlayerForMovement, row, col)) {
+                        if (confirm('Another player is already on this tile. Move anyway?')) {
+                            movePlayerToTile(selectedPlayerForMovement, row, col);
+                        } else {                         
+                            clearSelectedPlayerForMovement();
+                            document.querySelectorAll('.player-item').forEach(item => item.classList.remove('selected-player'));
+                        }
+                    }
+                    else
+                    {
+                        movePlayerToTile(selectedPlayerForMovement, row, col);
+                    }                
+                }
+                else
+                {
+                    // Select player on this tile     
+                    const playersOnThisTile = GetTilePlayerTokens(row, col);
+                    if (playersOnThisTile.length > 0) {
+                        const token = playersOnThisTile[0];
+                        const player = players.find(p => p.id === parseInt(token.dataset.playerId));
+                        const playerItem = document.querySelector(`.player-item:nth-child(${players.indexOf(player) + 1})`);
+                        selectPlayerForMovement(player, playerItem);
+                    }
+                }
+            }
+        }
+
+        // Save map
+        function saveMap() {
+            localStorage.setItem('dndMap', JSON.stringify(mapData));
+            showNotification('Map saved successfully! 🗺️');
+        }
+
+        function restoreState(){
+             const previouslySaved = localStorage.getItem('dndGameState')
+            if (previouslySaved) {
+                currentStage = 2;
+                document.getElementById('stage1').style.display = 'none';
+                document.getElementById('stage2').style.display = 'block';
+                document.getElementById('stageIndicator').textContent = 'Stage: Player Setup';
+                RecalculateTileAndGrid();
+                loadGameState();
+                showNotification('Entering Player Setup Stage ⚔️');
+            } else {
+                loadMap();
+            }
+        }
+
+
+        // Load map
+        function loadMap() {
+            const saved = localStorage.getItem('dndMap');
+            if (saved) {
+                mapData = JSON.parse(saved);
+                updateMapDisplay();
+                showNotification('Map loaded successfully! 📂');
+            } else {
+                loadStoredMap();
+            }
+        }
+
+        function loadStoredMap(filename='dungeon-map.json') {
+            fetch(filename)
+                .then(response => response.json())
+                .then(data => {
+                    mapData = data.mapData;
+                    updateMapDisplay();
+                    showNotification('Default ' + filename + '! 📂');
+                })
+                .catch(error => {
+                    showNotification('Error loading ' + filename + ':' + error);
+                    console.error('loadStoredMap error:', error);
+                });
+        }
+
+        // Clear map
+        function clearMap() {
+            if (confirm('Are you sure you want to clear the entire map?')) {
+                mapData.forEach((row, rowIdx) => {
+                    row.forEach((cell, colIdx) => {
+                        mapData[rowIdx][colIdx] = { type: 'grass', icon: '' };
+                    });
+                });
+                updateMapDisplay();
+                showNotification('Map cleared! 🗑️');
+            }
+        }
+
+        // Generate random map
+        function generateMap() {
+            if (confirm('Generate a new random map? This will replace the current map.')) {
+                // Clear map first
+                const grassType = TILE_TYPES.find(t => t.id === 'grass');
+                mapData.forEach((row, rowIdx) => {
+                    row.forEach((cell, colIdx) => {
+                        mapData[rowIdx][colIdx] = { type: grassType.id, icon: grassType.icon };
+                    });
+                });
+
+                // Generate random trees
+                const numtrees = 20 + Math.floor(Math.random() * 20); // 20-39 trees
+                const treeType = TILE_TYPES.find(t => t.id === 'tree');
+                for (let i = 0; i < numtrees; i++) {
+                    const x = Math.floor(Math.random() * GRID_COLS);
+                    const y = Math.floor(Math.random() * GRID_ROWS);
+                    mapData[y][x] = { type: treeType.id, icon: treeType.icon };
+                }
+
+                // Generate random rooms
+                const numRooms = 8 + Math.floor(Math.random() * 7); // 8-14 rooms
+                const rooms = [];
+
+                for (let i = 0; i < numRooms; i++) {
+                    const attempts = 50;
+                    for (let attempt = 0; attempt < attempts; attempt++) {
+                        const width = 4 + Math.floor(Math.random() * 8); // 4-11 tiles wide
+                        const height = 4 + Math.floor(Math.random() * 8); // 4-11 tiles tall
+                        const x = 1 + Math.floor(Math.random() * (GRID_COLS - width - 2));
+                        const y = 1 + Math.floor(Math.random() * (GRID_ROWS - height - 2));
+
+                        const newRoom = { x, y, width, height };
+                        
+                        // Check if room overlaps with existing rooms
+                        let overlaps = false;
+                        for (const room of rooms) {
+                            if (!(newRoom.x + newRoom.width + 1 < room.x ||
+                                  newRoom.x > room.x + room.width + 1 ||
+                                  newRoom.y + newRoom.height + 1 < room.y ||
+                                  newRoom.y > room.y + room.height + 1)) {
+                                overlaps = true;
+                                break;
+                            }
+                        }
+
+                        if (!overlaps) {
+                            rooms.push(newRoom);
+                            break;
+                        }
+                    }
+                }
+
+                // Draw rooms
+                const pathType = TILE_TYPES.find(t => t.id === 'path');
+                rooms.forEach((room, roomIndex) => {
+                    // Floor
+                    for (let y = room.y; y < room.y + room.height; y++) {
+                        for (let x = room.x; x < room.x + room.width; x++) {
+                            mapData[y][x] = { type: pathType.id, icon: pathType.icon };
+                        }
+                    }
+
+                    // Walls
+                    const wallType = TILE_TYPES.find(t => t.id === 'wall');
+                    for (let x = room.x; x < room.x + room.width; x++) {
+                        mapData[room.y][x] = { type: wallType.id, icon: wallType.icon };
+                        mapData[room.y + room.height - 1][x] = { type: wallType.id, icon: wallType.icon };
+                    }
+                    for (let y = room.y; y < room.y + room.height; y++) {
+                        mapData[y][room.x] = { type: wallType.id, icon: wallType.icon };
+                        mapData[y][room.x + room.width - 1] = { type: wallType.id, icon: wallType.icon };
+                    }
+
+                    // Add doors (1-2 per room)
+                    const numDoors = 1 + Math.floor(Math.random() * 2);
+                    const doorType = TILE_TYPES.find(t => t.id === 'door');
+                    for (let d = 0; d < numDoors; d++) {
+                        const side = Math.floor(Math.random() * 4); // 0=top, 1=right, 2=bottom, 3=left
+                        let doorX, doorY;
+                        
+                        if (side === 0) { // top
+                            doorX = room.x + 1 + Math.floor(Math.random() * (room.width - 2));
+                            doorY = room.y;
+                        } else if (side === 1) { // right
+                            doorX = room.x + room.width - 1;
+                            doorY = room.y + 1 + Math.floor(Math.random() * (room.height - 2));
+                        } else if (side === 2) { // bottom
+                            doorX = room.x + 1 + Math.floor(Math.random() * (room.width - 2));
+                            doorY = room.y + room.height - 1;
+                        } else { // left
+                            doorX = room.x;
+                            doorY = room.y + 1 + Math.floor(Math.random() * (room.height - 2));
+                        }
+                        
+                        if (doorY >= 0 && doorY < GRID_ROWS && doorX >= 0 && doorX < GRID_COLS) {
+                            mapData[doorY][doorX] = { type: doorType.id, icon: doorType.icon };
+                        }
+                    }
+
+                    /* Add random features to rooms
+                    const feature = Math.random();
+                    if (feature < 0.3 && roomIndex > 0) { // 30% chance of treasure (not in first room)
+                        const fx = room.x + 1 + Math.floor(Math.random() * (room.width - 2));
+                        const fy = room.y + 1 + Math.floor(Math.random() * (room.height - 2));
+                        if (mapData[fy][fx].type === 'path') {
+                            mapData[fy][fx] = { type: 'treasure', icon: '💰' };
+                        }
+                    } else if (feature < 0.5) { // 20% chance of trap
+                        const fx = room.x + 1 + Math.floor(Math.random() * (room.width - 2));
+                        const fy = room.y + 1 + Math.floor(Math.random() * (room.height - 2));
+                        if (mapData[fy][fx].type === 'path') {
+                            mapData[fy][fx] = { type: 'trap', icon: '⚠️' };
+                        }
+                    }*/
+                });
+
+
+                // Add some water features
+                const numWaterAreas = 2 + Math.floor(Math.random() * 3); // 2-4 water areas
+                const waterType = TILE_TYPES.find(t => t.id === 'water');
+                for (let i = 0; i < numWaterAreas; i++) {
+                    const wx = 2 + Math.floor(Math.random() * (GRID_COLS - 8));
+                    const wy = 2 + Math.floor(Math.random() * (GRID_ROWS - 8));
+                    const wsize = 2 + Math.floor(Math.random() * 4); // 2-5 tiles
+                    
+                    for (let dy = 0; dy < wsize; dy++) {
+                        for (let dx = 0; dx < wsize; dx++) {
+                            const ty = wy + dy;
+                            const tx = wx + dx;
+                            if (ty < GRID_ROWS && tx < GRID_COLS && 
+                                (mapData[ty][tx].type === grassType.id || mapData[ty][tx].type === treeType.id)) {
+                                mapData[ty][tx] = { type: waterType.id, icon: waterType.icon };
+                            }
+                        }
+                    }
+                }
+
+                updateMapDisplay();
+                showNotification('Random dungeon generated! 🎲');
+            }
+        }
+
+        // Update map display
+        function updateMapDisplay() {
+            const tiles = document.querySelectorAll('.map-tile');
+            tiles.forEach(tile => {
+                const row = parseInt(tile.dataset.row);
+                const col = parseInt(tile.dataset.col);
+                const data = mapData[row][col];
+                tile.className = `map-tile ${data.type}`;
+                tile.textContent = data.icon;
+            });
+            //ReplaceAllPlayerTokens(); //not working
+        }
+
+        // Stage navigation
+        function goToStage2() {
+            currentStage = 2;
+            document.getElementById('stage1').style.display = 'none';
+            document.getElementById('stage2').style.display = 'block';
+            document.getElementById('stageIndicator').textContent = 'Stage: Player Setup';
+            RecalculateTileAndGrid();
+            //loadGameState();
+            showNotification('Entering Player Setup Stage ⚔️');
+        }
+
+        function goToStage1() {
+            currentStage = 1;
+            document.getElementById('stage1').style.display = 'block';
+            document.getElementById('stage2').style.display = 'none';
+            document.getElementById('stageIndicator').textContent = 'Stage: Map Design';
+            RecalculateTileAndGrid();
+            showNotification('Returning to Map Design 🗺️');
+        }
+
+        // Add player
+        function addPlayer(event) {
+            const nameInput = document.getElementById('playerName');
+            const typeSelect = document.getElementById('playerType');
+            var name = nameInput.value.trim();
+            
+            if (!name) {
+                const typeSelect = document.getElementById('playerType');
+                const nameInput = document.getElementById('playerName');
+                const selectedType = PLAYER_TYPES[parseInt(typeSelect.value)];
+                name = selectedType.name;
+                
+                var index = 1;
+                var namePrefix = name;
+                do {
+                    name = namePrefix + ' ' + index;
+                    index++;
+                } while (players.some(p => p.name === name));                
+            }
+
+            const typeId = parseInt(typeSelect.value);
+            const playerType = PLAYER_TYPES[typeId];
+            
+            const player = {
+                id: Date.now(),
+                name: name,
+                type: playerType,
+                position: null
+            };
+
+            players.push(player);
+            updatePlayerList();
+            nameInput.value = '';
+            RecalculateTileAndGrid();
+            showNotification(`${name} the ${playerType.name} joined the party! 🎉`);
+        }
+
+        // Update player list
+        function updatePlayerList() {
+            const list = document.getElementById('playerList');
+            list.innerHTML = '';
+            
+            players.forEach(player => {
+                const item = document.createElement('div');
+                item.className = 'player-item' + (selectedPlayer?.id === player.id ? ' selected-player' : '');
+                item.onclick = () => toggleSelectPlayerForMovement(player, item);
+                item.innerHTML = `
+                    <div class="player-item-icon" style="background: ${player.type.color};">
+                        ${player.type.icon}
+                    </div>
+                    <div style="flex: 1;">
+                        <strong>${player.name}</strong> - ${player.type.name}
+                        ${player.position ? `<br><small>Position: (${player.position.row}, ${player.position.col})</small>` : '<br><small>Not placed</small>'}
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+            RecalculateTileAndGrid();
+        }
+
+        function clearSelectedPlayerForMovement() {
+            console.log('clearSelectedPlayerForMovement');
+            selectedPlayer = null;
+            selectedPlayerForMovement = null;
+            document.querySelectorAll('.player-token').forEach(token => token.classList.remove('selected-token'));
+        }
+
+
+
+        function toggleSelectPlayerForMovement(player, element) {
+            console.log('toggleSelectPlayerForMovement for', player.name);
+            selectedPlayer = player;
+            selectedPlayerForMovement = player;
+            if (element.classList.contains('selected-player')) {
+                // Deselect
+                clearSelectedPlayerForMovement();
+                document.querySelectorAll('.player-item').forEach(item => item.classList.remove('selected-player'));
+                showNotification(`Deselected ${player.name}.`);
+                return;
+            }
+            document.querySelectorAll('.player-item').forEach(item => item.classList.remove('selected-player'));
+            element.classList.add('selected-player');
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight player token if on map
+            document.querySelectorAll('.player-token').forEach(token => {
+                if (parseInt(token.dataset.playerId) === player.id && token.classList.contains('selected-player') === false ) {
+                    token.classList.add('selected-token');
+                }             
+            });
+            
+            showNotification(`Selected ${player.name}. Click a tile to move! 🎯`);
+        }
+
+        // Select player for movement
+        function selectPlayerForMovement(player, element) {
+            console.log('selectPlayerForMovement for', player.name);
+            selectedPlayer = player;
+            selectedPlayerForMovement = player;
+            document.querySelectorAll('.player-item').forEach(item => item.classList.remove('selected-player'));
+            element.classList.add('selected-player');
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Highlight player token if on map
+            document.querySelectorAll('.player-token').forEach(token => {
+                if (parseInt(token.dataset.playerId) === player.id && token.classList.contains('selected-player') === false ) {
+                    token.classList.add('selected-token');
+                }             
+            });
+            
+            showNotification(`Selected ${player.name}. Click a tile to move! 🎯`);
+        }
+
+        function GetTilePlayerTokens(row, col) 
+        {
+            const tile = document.querySelector(`.map-tile[data-row="${row}"][data-col="${col}"]`);
+            return tile?.querySelectorAll('.player-token');
+        }
+
+        function TileContainsAnotherPlayer(player, row, col) 
+        {            
+            const oldTokens = GetTilePlayerTokens(row, col);
+            if (oldTokens) {
+                for (const token of oldTokens) {
+                    if (parseInt(token.dataset.playerId) !== player.id) {
+                        return true;
+                }
+                }
+            }
+            return false;
+        }
+
+        // Move player to tile
+        function movePlayerToTile(player, row, col) {
+            console.log(`movePlayerToTile: Moving ${player.name} to (${row}, ${col})`);
+            // Remove old position
+            if (player.position) {
+                const oldTile = document.querySelector(`.map-tile[data-row="${player.position.row}"][data-col="${player.position.col}"]`);
+                const oldTokens = oldTile?.querySelectorAll('.player-token');
+                if (oldTokens) oldTokens.forEach(token => {
+                    if (parseInt(token.dataset.playerId) === player.id) token.remove();
+                });
+            }
+
+            // Set new position
+            player.position = { row, col };
+
+            // Add token to new position
+            const tile = document.querySelector(`.map-tile[data-row="${row}"][data-col="${col}"]`);
+            const token = document.createElement('div');
+            token.className = 'player-token' + (selectedPlayer?.id === player.id ? ' selected-token' : '');
+            token.style.background = player.type.color;
+            token.style.width = `${TILE_SIZE - 10}px`;
+            token.style.height = `${TILE_SIZE - 10}px`;
+            token.textContent = player.type.icon;
+            token.dataset.playerId = player.id;
+            tile.appendChild(token);
+
+            clearSelectedPlayerForMovement();
+            updatePlayerList();            
+            showNotification(`${player.name} moved to (${row}, ${col})! 🏃`);
+        }
+
+        // Remove selected player
+        function removeSelectedPlayer() {
+            if (!selectedPlayer) {
+                showNotification('Please select a player first! ⚠️');
+                return;
+            }
+
+            if (confirm(`Remove ${selectedPlayer.name} from the game?`)) {
+                // Remove token from map
+                if (selectedPlayer.position) {
+                    const tile = document.querySelector(`.map-tile[data-row="${selectedPlayer.position.row}"][data-col="${selectedPlayer.position.col}"]`);
+                    const token = tile?.querySelector('.player-token');
+                    if (token) token.remove();
+                }
+
+                players = players.filter(p => p.id !== selectedPlayer.id);
+                selectedPlayer = null;
+                selectedPlayerForMovement = null;
+                updatePlayerList();
+                showNotification('Player removed! 👋');
+            }
+        }
+
+        function clearPositionSelectedPlayer()
+        {
+            if (!selectedPlayer) {
+                showNotification('Please select a player first! ⚠️');
+                return;
+            }
+
+            if (selectedPlayer.position === null) {
+                showNotification('Selected player is not on the map! ⚠️');
+                return;
+            }
+
+            if (confirm(`Clear ${selectedPlayer.name}'s position on the map?`)) {
+                // Remove token from map
+                if (selectedPlayer.position) {
+                    const tile = document.querySelector(`.map-tile[data-row="${selectedPlayer.position.row}"][data-col="${selectedPlayer.position.col}"]`);
+                    const token = tile?.querySelector('.player-token');
+                    if (token) token.remove();
+                }
+
+                selectedPlayer.position = null;
+                selectedPlayer = null;
+                selectedPlayerForMovement = null;
+                updatePlayerList();
+                showNotification('Player position cleared! 🧹');
+            }
+        }
+
+        function clearGameState() {
+            if (confirm('Are you sure you want to clear the saved game state? This will remove all players and their positions.')) {
+                localStorage.removeItem('dndGameState');
+                players = [];
+                selectedPlayer = null;
+                selectedPlayerForMovement = null;
+                
+                // Remove all player tokens from map
+                document.querySelectorAll('.player-token').forEach(token => token.remove());
+                
+                updatePlayerList();
+                showNotification('Game state cleared! 🗑️');
+            }
+        }
+
+        // Save game state
+        function saveGameState() {
+            const gameState = {
+                map: mapData,
+                players: players
+            };
+            localStorage.setItem('dndGameState', JSON.stringify(gameState));
+            showNotification('Game state saved! 💾');
+        }
+
+        // Load game state
+        function loadGameState() {
+            const saved = localStorage.getItem('dndGameState');
+            if (saved) {
+                const gameState = JSON.parse(saved);
+                mapData = gameState.map;
+                players = gameState.players;
+                
+                updateMapDisplay();
+                updatePlayerList();
+                
+                ReplaceAllPlayerTokens();
+                
+                showNotification('Game state loaded! 📂');
+            }
+        }
+
+        function ReplaceAllPlayerTokens() {
+                // Re-place all player tokens
+                players.forEach(player => {
+                    if (player.position) {
+                        const tile = document.querySelector(`.map-tile[data-row="${player.position.row}"][data-col="${player.position.col}"]`);
+                        if (tile) {
+                            const token = document.createElement('div');
+                            token.className = 'player-token';
+                            token.style.background = player.type.color;
+                            token.style.width = `${TILE_SIZE - 10}px`;
+                            token.style.height = `${TILE_SIZE - 10}px`;
+                            token.textContent = player.type.icon;
+                            token.dataset.playerId = player.id;
+                            tile.appendChild(token);
+                        }
+                    }
+                }); 
+        }
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Export map to JSON file
+        function exportMap() {
+            const mapExport = {
+                version: '1.0',
+                gridSize: {
+                    rows: GRID_ROWS,
+                    cols: GRID_COLS
+                },
+                mapData: mapData,
+                exportedAt: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(mapExport, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `dungeon-map-${Date.now()}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Map exported successfully! 💾');
+        }
+
+        // Import map from JSON file
+        function importMap(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    // Validate import data
+                    if (!imported.mapData || !Array.isArray(imported.mapData)) {
+                        throw new Error('Invalid map data format');
+                    }
+
+                    // Check if grid sizes match
+                    if (imported.gridSize && 
+                        (imported.gridSize.rows !== GRID_ROWS || 
+                         imported.gridSize.cols !== GRID_COLS)) {
+                        if (!confirm(`This map was created with different dimensions (${imported.gridSize.rows}x${imported.gridSize.cols}). Current grid is ${GRID_ROWS}x${GRID_COLS}. Import anyway? (May cause issues)`)) {
+                            event.target.value = '';
+                            return;
+                        }
+                    }
+
+                    // Import the map data
+                    mapData = imported.mapData;
+                    
+                    // Ensure the map data matches current grid size
+                    while (mapData.length < GRID_ROWS) {
+                        mapData.push(Array(GRID_COLS).fill(null).map(() => ({ type: 'grass', icon: '' })));
+                    }
+                    mapData = mapData.slice(0, GRID_ROWS);
+                    mapData.forEach(row => {
+                        while (row.length < GRID_COLS) {
+                            row.push({ type: 'grass', icon: '' });
+                        }
+                        row.splice(GRID_COLS);
+                    });
+
+                    updateMapDisplay();                    
+                    showNotification('Map imported successfully! 📁');
+                } catch (error) {
+                    showNotification('Error importing map: ' + error.message + ' ⚠️');
+                    console.error('Import error:', error);
+                }
+                
+                // Reset file input
+                event.target.value = '';
+            };
+            
+            reader.onerror = function() {
+                showNotification('Error reading file! ⚠️');
+                event.target.value = '';
+            };
+            
+            reader.readAsText(file);
+        }
+
+        // Toggle import map menu
+        function toggleImportMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('importMapMenu');
+            menu.classList.toggle('show');
+        }
+
+        function toggleStateMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('stateMenu');
+            menu.classList.toggle('show');
+        }
+
+        function clearStateMenu() {
+            const menu = document.getElementById('stateMenu');
+            menu.classList.remove('show');
+        }
+
+        // Handle import option selection
+        function selectImportOption(value) {
+            const menu = document.getElementById('importMapMenu');
+            menu.classList.remove('show');
+            
+            if (value === 'file') {
+                // "Import from File" option selected - trigger file input
+                document.getElementById('importMapFile').click();
+            } else {
+                // One of the preset maps selected
+                loadStoredMap(value);
+            }
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const importMenu = document.getElementById('importMapMenu');
+            const importContainer = document.querySelector('.import-map-container');
+            if (importMenu && !importContainer?.contains(event.target)) {
+                importMenu.classList.remove('show');
+            }
+
+            const stateMenu = document.getElementById('stateMenu');
+            if (stateMenu && !importContainer?.contains(event.target)) {
+                stateMenu.classList.remove('show');
+            }
+        });
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
